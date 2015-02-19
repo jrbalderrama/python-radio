@@ -7,10 +7,8 @@ import operator
 import pkg_resources
 import sys
 
-from collections import deque
 from collections import OrderedDict
 from fuzzywuzzy import process
-
 
 from station import Station
 
@@ -69,14 +67,20 @@ class Playlist(object):
         self._stations = value
 
     def match_station(self, description, use_keywords):
-        """
-        Match the 'description' with a station of the play-list.
+        """Match the 'description' with a station of the play-list.
+
         The matching uses a fuzzy method.
+
         """
-        best_matches = list()
+        list_names = (x.name for x in self._stations)
+        best_by_name = (process.extractOne(description, list_names))
+
+        tree_matches = bintrees.AVLTree()
+        tree_matches.insert(best_by_name[0], best_by_name[1])
+
         if use_keywords:
             _dict_keywords = dict((x.name, x.keywords) for x in self._stations)
-            # ordered dictionary by keywords name
+            # ordered dictionary by station keywords
             dict_keywords = OrderedDict(sorted(_dict_keywords.items(),
                                                key=operator.itemgetter(0)))
             # best match (score included) by keywords
@@ -84,8 +88,8 @@ class Playlist(object):
                                                 dict_keywords.values())
             # index of best by keywords in ordered dictionary
             index = list(dict_keywords.values()).index(tuple_keywords[0])
-            best_matches.append((list(dict_keywords.keys())[index],
-                                 tuple_keywords[1]))
+            tree_matches.insert(list(dict_keywords.keys())[index],
+                                tuple_keywords[1])
 
             _dict_genre = dict((x.name, x.genre) for x in self._stations)
             # ordered dictionary by station name
@@ -95,33 +99,40 @@ class Playlist(object):
             tuple_genre = process.extractOne(description, dict_genre.values())
             # index of best by genre in ordered dictionary
             index = list(dict_genre.values()).index(tuple_genre[0])
-            best_matches.append((list(dict_genre.keys())[index],
-                                 tuple_genre[1]))
+            tree_matches.insert(list(dict_genre.keys())[index],
+                                tuple_genre[1])
 
-        list_names = (x.name for x in self._stations)
-        best_by_name = process.extractOne(description, list_names)
-        best_matches.append(best_by_name)
+        # print(OrderedDict(sorted(tree_matches.iter_items(),
+        #                          key=operator.itemgetter(1))))#).popitem()[0]
 
-        best_match = sorted(best_matches, key=operator.itemgetter(1))[-1][0]
-        return self.get_station(best_match)
+        bests = sorted(tree_matches.iter_items(), key=operator.itemgetter(1))
+        return self.get_station(bests[-1][0])
 
     def search(self, description, use_keywords, limit):
         """
         Search stations matching a 'description'. Number of results is defined
         by the 'limit'.
         """
-        best_matches = list()
-
         names = (x.name for x in self._stations)
         matches_by_name = process.extract(description, names, limit=limit)
-        best_matches.extend(matches_by_name)
-        #best_matches.extend(matches_by_name)
-        #print(best_matches)
 
-        sorted_matches = sorted(best_matches, key=operator.itemgetter(1))
-        #print(deque(sorted_matches))
-        # return list without duplicates
-        return list(OrderedDict(sorted_matches).keys())
+        tree_matches = bintrees.AVLTree(matches_by_name)
+        print(tree_matches)
+
+        result = sorted(tree_matches.iter_items(), key=operator.itemgetter(1),
+                        reverse=True)[0:limit:]
+
+        return (x[0] for x in result)
+
+        # best_matches.extend(matches_by_name)
+        #
+        # #best_matches.extend(matches_by_name)
+        # #print(best_matches)
+        #
+        # sorted_matches = sorted(best_matches, key=operator.itemgetter(1))
+        # #print(deque(sorted_matches))
+        # # return list without duplicates
+        # return list(OrderedDict(sorted_matches).keys())
 
     def add_station(self, station):
         """

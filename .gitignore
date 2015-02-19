@@ -1,3 +1,4 @@
 .python-version
 __pycache__/*
+radio/__pycache__/*
 python_radio.egg-info/*

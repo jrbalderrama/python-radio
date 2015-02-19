@@ -1,22 +1,14 @@
 """Radio receiver/recorder."""
 
 import random
+import sys
 
 from player import Player
 from playlist import Playlist
-from station import Station
 
 
 class Console(object):
     """Console """
-
-    @staticmethod
-    def cap(string, length):
-        """
-        Cap a 'string' to a certain 'length', if 'length' is exceeded appending
-        dots (...) after it.
-        """
-        return string if len(string) <= length else string[0:length-3] + '...'
 
     def __init__(self):
         self._playlist = Playlist.load_playlist()
@@ -40,17 +32,13 @@ class Console(object):
         Print the available radio stations.
         """
         for _station in self._playlist:
-            if _station.website:
-                print("\t{:{}} {}".format(self.cap(_station.name, 25),
-                                          25, _station.website))
-            else:
-                print("\t{}".format(_station.name))
+            print(_station)
 
     def search(self, description, use_keywords=False, limit=5):
         """
         Search a list of stations.
         """
-        for name in reversed(self._playlist.search(description, use_keywords, limit)):
+        for name in self._playlist.search(description, use_keywords, limit):
             station = self._playlist.get_station(name)
             print(station)
 
@@ -66,7 +54,6 @@ class Console(object):
         """
         Play best matched station.
         """
-        # str.lower
         station = self._playlist.match_station(description, use_keywords)
         Player.play(station)
 
@@ -77,17 +64,35 @@ class Console(object):
         station = self._playlist.match_station(description, use_keywords)
         Player.record(station)
 
-#console = Console()
-#
-# #console.list()
-# #console.shuffle()
+    def info(self, name):
+        """Show detailed information about the station with name 'name'.
+
+        :param str name:
+        :returns: None
+
+        """
+
+        station = self._playlist.get_station(name)
+        if station:
+            station.get_description()
+        else:
+            print("\tNo references for '{}'\n".format(name), file=sys.stderr)
+
+console = Console()
+
+# console.list()
+# console.shuffle()
 # console.tune("Rai classic")
 # console.tune("Rai classic", True)
-# console.search("Rai Radio")
-# console.search("Rai Radio", True)
-#console.record("parliament")
+# console.tune("Rai hit radio", True)
+# console.search("Rai radiofd")
+# console.search("Rai web", True)
+# console.record("parliament")
+# console.info("Rai WebRadio6")
+console.info("Rai WebRadio6")
 
-# print(console.playlist)
+#print(console.playlist)
+
 # import time
 # import sys
 #
@@ -104,23 +109,3 @@ class Console(object):
 #         sys.stdout.write('\r{}'.format(' '*((i+1)//18)))
 #         sys.stdout.write('\r{}'.format('.'*(i//18)))
 # #    sys.stdout.flush()
-#
-#
-#
-# from station import Station
-#
-# r = Station("radio NRJ the best BBC this is a really long name for a radio", "http://pluzz.tvfrance.fr/radio", None, ":music:news")
-# s = Station("station", "http://www.google.com/radio")
-#
-# f = Station("Frequence ONE", "http://one.ie/An", None, ":pop:hiphop:electro")
-#
-# playlist = Playlist()
-# playlist.add_station(f)
-# playlist.add_station(s)
-# playlist.add_station(f)
-#
-# console = Console()
-# console.playlist = playlist
-# console.list()
-#
-# console.shuffle()
